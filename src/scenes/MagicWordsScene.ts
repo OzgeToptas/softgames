@@ -92,7 +92,7 @@ export class MagicWordsScene extends BaseScene {
         window.addEventListener('resize', this.boundResize);
 
         // Overlay div ekle (sadece masaüstü için)
-        if (!this._scrollOverlay) {
+        if (!this._scrollOverlay && !/Mobi|Android/i.test(navigator.userAgent)) {
             this._scrollOverlay = document.createElement('div');
             this._scrollOverlay.style.position = 'fixed';
             this._scrollOverlay.style.left = '0';

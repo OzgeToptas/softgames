@@ -6,17 +6,25 @@ import { Button } from '../components/Button';
 export class StartScene extends BaseScene {
     private sceneManager: SceneManager;
     private bgSprite: Sprite | null = null;
-    private startButton: Button;
+    private startButton?: Button;
 
     constructor(app: Application, sceneManager: SceneManager) {
         super(app);
         this.sceneManager = sceneManager;
         this.startButton = new Button('START GAME', () => {
-            this.sceneManager.start('gameselect');
+            try {
+                this.sceneManager.start('gameselect');
+            } catch (e) {
+                console.error('Start Game error:', e);
+            }
         });
     }
 
     public init(): void {
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            this.sceneManager.start('gameselect');
+            return;
+        }
         this.container.removeChildren();
 
         if (Texture.from('assets/bg.jpg').baseTexture.valid) {
@@ -37,24 +45,27 @@ export class StartScene extends BaseScene {
         this.fpsText.position.set(20, 20);
         this.container.addChild(this.fpsText);
 
-        this.startButton.position.set(window.innerWidth / 2 - this.startButton.width / 2, window.innerHeight * 0.65);
-        this.startButton.scale.set(1.4);
-        this.container.addChild(this.startButton);
+        if (this.startButton) {
+            this.startButton.position.set(window.innerWidth / 2 - this.startButton.width / 2, window.innerHeight * 0.65);
+            this.startButton.scale.set(1.4);
+            this.container.addChild(this.startButton);
 
-        this.startButton.eventMode = 'static';
-        this.startButton.cursor = 'pointer';
-        this.startButton.on('pointerover', () => {
-            this.startButton.scale.set(1.55);
-        });
-        this.startButton.on('pointerout', () => {
-            this.startButton.scale.set(1.4);
-        });
-        this.startButton.on('pointerdown', () => {
-            this.startButton.scale.set(1.2);
-        });
-        this.startButton.on('pointerup', () => {
-            this.startButton.scale.set(1.4);
-        });
+            this.startButton.eventMode = 'static';
+            this.startButton.cursor = 'pointer';
+            this.startButton.interactive = true;
+            this.startButton.on('pointerover', () => {
+                this.startButton!.scale.set(1.55);
+            });
+            this.startButton.on('pointerout', () => {
+                this.startButton!.scale.set(1.4);
+            });
+            this.startButton.on('pointerdown', () => {
+                this.startButton!.scale.set(1.2);
+            });
+            this.startButton.on('pointerup', () => {
+                this.startButton!.scale.set(1.4);
+            });
+        }
         window.addEventListener('resize', this.onResize.bind(this));
         this.onResize();
     }
@@ -73,6 +84,6 @@ export class StartScene extends BaseScene {
     public destroy(): void {
         window.removeEventListener('resize', this.onResize.bind(this));
         if (this.bgSprite) this.bgSprite.destroy();
-        this.startButton.destroy();
+        if (this.startButton) this.startButton.destroy();
     }
 } 
