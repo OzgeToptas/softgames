@@ -39,11 +39,13 @@ src/
 ## Getting Started
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Start the project:**
+
    ```bash
    npm run dev
    ```
@@ -87,5 +89,4 @@ src/
 
 ---
 
-For any questions or contributions, feel free to reach out!
-Good luck & have fun 🎮✨ # softgames-assignment
+For any questions or contributions, feel free to reach out! 🎮✨ # softgames-assignment
