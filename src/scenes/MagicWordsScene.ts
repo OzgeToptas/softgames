@@ -36,6 +36,8 @@ export class MagicWordsScene extends BaseScene {
     private scrollArrow: Sprite | null = null;
     private emojiMap: Record<string, string> = {};
     private boundResize: () => void;
+    private _windowWheelListener: ((e: WheelEvent) => void) | null = null;
+    private _scrollOverlay: HTMLDivElement | null = null;
 
     constructor(app: Application, sceneManager: SceneManager) {
         super(app);
@@ -69,14 +71,46 @@ export class MagicWordsScene extends BaseScene {
         this.updateMask();
         this.dialogueContainer.mask = this.maskGraphics;
         this.container.addChild(this.maskGraphics);
-        this.container.eventMode = 'static';
-        this.container.on('wheel', this.onWheelScroll, this);
-        this.container.on('pointerdown', this.onTouchStart, this);
-        this.container.on('pointermove', this.onTouchMove, this);
-        this.container.on('pointerup', this.onTouchEnd, this);
-        this.container.on('pointerupoutside', this.onTouchEnd, this);
+        this.dialogueContainer.interactive = true;
+        this.dialogueContainer.interactiveChildren = true;
+        this.dialogueContainer.eventMode = 'static';
+        this.dialogueContainer.on('pointerdown', this.onTouchStart, this);
+        this.dialogueContainer.on('pointermove', this.onTouchMove, this);
+        this.dialogueContainer.on('pointerup', this.onTouchEnd, this);
+        this.dialogueContainer.on('pointerupoutside', this.onTouchEnd, this);
+        if (!this._windowWheelListener) {
+            this._windowWheelListener = (e: WheelEvent) => {
+                e.preventDefault();
+                this.scrollY -= e.deltaY;
+                this.scrollY = Math.max(this.minScrollY, Math.min(this.maxScrollY, this.scrollY));
+                if (this.dialogueContainer) this.dialogueContainer.y = this.scrollY;
+                this.updateScrollArrowVisibility();
+            };
+            window.addEventListener('wheel', this._windowWheelListener, { passive: false });
+        }
         this.onResize();
         window.addEventListener('resize', this.boundResize);
+
+        // Overlay div ekle (sadece masaüstü için)
+        if (!this._scrollOverlay) {
+            this._scrollOverlay = document.createElement('div');
+            this._scrollOverlay.style.position = 'fixed';
+            this._scrollOverlay.style.left = '0';
+            this._scrollOverlay.style.top = '0';
+            this._scrollOverlay.style.width = '100vw';
+            this._scrollOverlay.style.height = '100vh';
+            this._scrollOverlay.style.zIndex = '9999';
+            this._scrollOverlay.style.background = 'transparent';
+            this._scrollOverlay.style.pointerEvents = 'auto';
+            document.body.appendChild(this._scrollOverlay);
+            this._scrollOverlay.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                this.scrollY -= e.deltaY;
+                this.scrollY = Math.max(this.minScrollY, Math.min(this.maxScrollY, this.scrollY));
+                if (this.dialogueContainer) this.dialogueContainer.y = this.scrollY;
+                this.updateScrollArrowVisibility();
+            }, { passive: false });
+        }
 
         try {
             const response = await fetch('https://api.allorigins.win/raw?url=https://private-624120-softgamesassignment.apiary-mock.com/v2/magicwords');
@@ -239,6 +273,10 @@ export class MagicWordsScene extends BaseScene {
         }
         this.updateScrollLimits();
         this.updateScrollArrowVisibility();
+        setTimeout(() => {
+            this.updateScrollLimits();
+            this.updateScrollArrowVisibility();
+        }, rowContainers.length * 300 + 100);
     }
 
     private showError(message: string) {
@@ -263,24 +301,24 @@ export class MagicWordsScene extends BaseScene {
 
     private updateScrollLimits() {
         const visibleHeight = window.innerHeight;
-        const contentHeight = this.dialogueContainer ? this.dialogueContainer.height : 0;
+        let contentHeight = 0;
+        if (this.dialogueContainer && this.dialogueContainer.children.length > 0) {
+            let maxY = 0;
+            for (const child of this.dialogueContainer.children) {
+                let childHeight = 0;
+                if ('height' in child && typeof (child as any).height === 'number') {
+                    childHeight = (child as any).height;
+                }
+                if (child.y + childHeight > maxY) {
+                    maxY = child.y + childHeight;
+                }
+            }
+            contentHeight = maxY;
+        }
         this.maxScrollY = 0;
         this.minScrollY = Math.min(0, visibleHeight - contentHeight - 100); // 100px padding
         this.scrollY = Math.max(this.minScrollY, Math.min(this.maxScrollY, this.scrollY));
         if (this.dialogueContainer) this.dialogueContainer.y = this.scrollY;
-    }
-
-    private onWheelScroll(event: any) {
-        if (event.data && event.data.originalEvent) {
-            event.data.originalEvent.preventDefault();
-        } else if (event.preventDefault) {
-            event.preventDefault();
-        }
-        const deltaY = event.deltaY || (event.data && event.data.originalEvent && event.data.originalEvent.deltaY) || 0;
-        this.scrollY -= deltaY;
-        this.scrollY = Math.max(this.minScrollY, Math.min(this.maxScrollY, this.scrollY));
-        if (this.dialogueContainer) this.dialogueContainer.y = this.scrollY;
-        this.updateScrollArrowVisibility();
     }
 
     private onTouchStart(event: any) {
@@ -349,11 +387,9 @@ export class MagicWordsScene extends BaseScene {
         this.scrollArrow.zIndex = 9999;
         this.container.sortableChildren = true;
         this.scrollArrow.on('pointerdown', () => {
-            console.log('Arrow clicked!', 'scrollY:', this.scrollY, 'minScrollY:', this.minScrollY);
             this.scrollY = Math.max(this.minScrollY, this.scrollY - 120);
             if (this.dialogueContainer) this.dialogueContainer.y = this.scrollY;
             this.updateScrollArrowVisibility();
-            console.log('After scroll:', 'scrollY:', this.scrollY, 'minScrollY:', this.minScrollY);
         });
         this.container.addChild(this.scrollArrow);
         this.updateScrollArrowVisibility();
@@ -366,6 +402,14 @@ export class MagicWordsScene extends BaseScene {
 
     public destroy(): void {
         window.removeEventListener('resize', this.boundResize);
+        if (this._windowWheelListener) {
+            window.removeEventListener('wheel', this._windowWheelListener);
+            this._windowWheelListener = null;
+        }
+        if (this._scrollOverlay) {
+            document.body.removeChild(this._scrollOverlay);
+            this._scrollOverlay = null;
+        }
         this.container.removeAllListeners();
         if (this.dialogueContainer) {
             this.dialogueContainer.removeAllListeners();
