@@ -1,7 +1,7 @@
 import { Container, Text, Application } from 'pixi.js';
 
 export abstract class BaseScene {
-    protected container: Container;
+    public container: Container;
     protected app: Application;
     protected fpsText: Text;
 
