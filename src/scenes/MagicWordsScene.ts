@@ -46,6 +46,17 @@ export class MagicWordsScene extends BaseScene {
         this.backButton = new Button('Back to Menu', () => {
             this.sceneManager.start('gameselect');
         });
+        this.backButton.eventMode = 'static';
+        this.backButton.cursor = 'pointer';
+        this.backButton.interactive = true;
+
+        if (window.innerWidth < 600) {
+            this.backButton.hitArea = new Rectangle(
+                -20, -20,
+                this.backButton.width + 40,
+                this.backButton.height + 40
+            );
+        }
         this.dialogueContainer = new Container();
     }
 
@@ -342,10 +353,14 @@ export class MagicWordsScene extends BaseScene {
     }
 
     public onResize(): void {
+        const isMobile = window.innerWidth < 600;
+
         if (this.backButton) {
+            const btnPadding = isMobile ? 24 : 20;
+            this.backButton.scale.set(isMobile ? 1.5 : 1);
             this.backButton.position.set(
-                window.innerWidth - this.backButton.width - 20,
-                20
+                window.innerWidth - this.backButton.width * this.backButton.scale.x - btnPadding,
+                btnPadding
             );
         }
         this.updateMask();
@@ -355,21 +370,30 @@ export class MagicWordsScene extends BaseScene {
         }
         this.updateScrollArrowVisibility();
 
+
         if (this.dialogueContainer) {
             this.dialogueContainer.width = window.innerWidth;
             this.dialogueContainer.height = window.innerHeight;
-
             for (const child of this.dialogueContainer.children) {
                 if (child instanceof Container) {
+
+                    const maxRowWidth = isMobile ? window.innerWidth - 32 : window.innerWidth - 100;
+                    if (child.width > maxRowWidth) {
+                        child.width = maxRowWidth;
+                    }
                     const rowWidth = child.width;
                     const position = child.position.x > window.innerWidth / 2 ? 'right' : 'left';
                     if (position === 'right') {
-                        child.position.set(window.innerWidth - rowWidth - 50, child.position.y);
+                        child.position.set(window.innerWidth - rowWidth - (isMobile ? 16 : 50), child.position.y);
                     } else {
-                        child.position.set(50, child.position.y);
+                        child.position.set(isMobile ? 16 : 50, child.position.y);
                     }
                 }
             }
+        }
+
+        if (this.fpsText) {
+            this.fpsText.style.fontSize = isMobile ? 22 : 16;
         }
     }
 

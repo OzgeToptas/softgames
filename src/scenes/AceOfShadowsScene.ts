@@ -1,4 +1,4 @@
-import { Container, Texture, Sprite, Text, Application } from 'pixi.js';
+import { Container, Texture, Sprite, Text, Application, Rectangle } from 'pixi.js';
 import { BaseScene } from './BaseScene';
 import { SceneManager } from '../core/SceneManager';
 import { Button } from '../components/Button';
@@ -52,21 +52,24 @@ export class AceOfShadowsScene extends BaseScene {
 
     private updateStackPositions() {
         const stackCount = 4;
-        const cardWidth = 80;
-        const stackSpacing = 120;
+        const isMobile = window.innerWidth < 600;
+        const cardWidth = isMobile ? Math.floor(window.innerWidth * 0.18) : 80;
+        const cardHeight = isMobile ? Math.floor(window.innerHeight * 0.18) : 120;
+        const stackSpacing = isMobile ? Math.floor(window.innerWidth * 0.08) : 120;
         const totalWidth = stackCount * cardWidth + (stackCount - 1) * stackSpacing;
         const startX = (window.innerWidth - totalWidth) / 2 + cardWidth / 2;
-        const y = window.innerHeight / 2 - 200;
+        const y = window.innerHeight / 2 - (isMobile ? cardHeight * 1.2 : 200);
         for (let i = 0; i < stackCount; i++) {
             this.STACK_POSITIONS[i].x = startX + i * (cardWidth + stackSpacing);
             this.STACK_POSITIONS[i].y = y;
         }
-
         for (let i = 0; i < stackCount; i++) {
             for (let j = 0; j < this.stacks[i].length; j++) {
                 const card = this.stacks[i][j];
                 card.x = this.STACK_POSITIONS[i].x;
-                card.y = this.STACK_POSITIONS[i].y + j * 4;
+                card.y = this.STACK_POSITIONS[i].y + j * (isMobile ? 2 : 4);
+                card.width = cardWidth;
+                card.height = cardHeight;
             }
         }
     }
@@ -77,11 +80,23 @@ export class AceOfShadowsScene extends BaseScene {
         this.container.removeChildren();
         this.fpsText.position.set(20, 20);
         this.container.addChild(this.fpsText);
-        this.backButton = new Button('Back to Menu', () => {
+        this.backButton = new Button('Back to Menu', () => { });
+        this.backButton.eventMode = 'static';
+        this.backButton.cursor = 'pointer';
+        this.backButton.interactive = true;
+        this.backButton.removeAllListeners();
+        this.backButton.on('pointertap', () => {
             if (!this.isAnimating) {
                 this.sceneManager.start('gameselect');
             }
         });
+        if (window.innerWidth < 600) {
+            this.backButton.hitArea = new Rectangle(
+                -20, -20,
+                this.backButton.width + 40,
+                this.backButton.height + 40
+            );
+        }
         this.backButton.position.set(
             window.innerWidth - this.backButton.width - 20,
             20
@@ -177,19 +192,19 @@ export class AceOfShadowsScene extends BaseScene {
         });
     }
 
-    private onResize(): void {
-
+    public onResize(): void {
+        const isMobile = window.innerWidth < 600;
         if (this.backButton) {
+            this.backButton.scale.set(isMobile ? 1.5 : 1);
             this.backButton.position.set(
-                window.innerWidth - this.backButton.width - 20,
-                20
+                window.innerWidth - this.backButton.width * this.backButton.scale.x - (isMobile ? 24 : 20),
+                isMobile ? 24 : 20
             );
         }
         this.updateStackPositions();
-
         const scale = Math.min(
-            window.innerWidth / 1000,
-            window.innerHeight / 800
+            window.innerWidth / (isMobile ? 600 : 1000),
+            window.innerHeight / (isMobile ? 700 : 800)
         );
         this.setScale(scale);
     }
