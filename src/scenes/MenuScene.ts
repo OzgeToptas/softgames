@@ -13,9 +13,9 @@ export class MenuScene extends BaseScene {
         super(app);
         this.sceneManager = sceneManager;
         this.startButton = new Button('Start Game', () => {
-            sceneManager.start('aceofshadows');
+            this.showGameOptions = true;
+            this.updateMenuVisibility();
         });
-
 
         this.container.pivot.set(
             this.container.width / 2,
@@ -31,10 +31,14 @@ export class MenuScene extends BaseScene {
         this.container.removeChildren();
         this.menuButtons = [];
 
+        // Start butonunu her init'te yeniden oluştur ve ekle
+        this.startButton = new Button('Start Game', () => {
+            this.showGameOptions = true;
+            this.updateMenuVisibility();
+        });
         this.startButton.anchor = { x: 0.5, y: 0.5 };
         this.startButton.position.set(0, 0);
         this.container.addChild(this.startButton);
-
 
         const buttonNames = ['Ace of Shadows', 'Magic Words', 'Phoenix Flame'];
         buttonNames.forEach((name, index) => {
@@ -50,8 +54,8 @@ export class MenuScene extends BaseScene {
             btn.position.set((index - 1) * 260, 200);
             btn.eventMode = 'static';
             btn.cursor = 'pointer';
-            btn.visible = this.showGameOptions;
             btn.on('pointerdown', () => {
+                this.showGameOptions = false;
                 if (name === 'Phoenix Flame') {
                     this.sceneManager.start('phoenixflame');
                 } else {
@@ -63,7 +67,6 @@ export class MenuScene extends BaseScene {
             box.beginFill(0x23234a, 0.85);
             box.drawRoundedRect(-120, -40, 240, 80, 18);
             box.endFill();
-            box.visible = this.showGameOptions;
             btn.addChild(box);
             btn.zIndex = 1;
             this.container.addChild(box);
@@ -71,16 +74,13 @@ export class MenuScene extends BaseScene {
             this.menuButtons.push(btn);
         });
 
-
         this.fpsText.position.set(
             -this.app.screen.width / 2 + 20,
             -this.app.screen.height / 2 + 20
         );
         this.container.addChild(this.fpsText);
 
-
         window.addEventListener('resize', this.onResize.bind(this));
-
 
         this.container.pivot.set(
             this.container.width / 2,
@@ -91,21 +91,20 @@ export class MenuScene extends BaseScene {
             this.app.screen.height / 2
         );
 
+        this.showGameOptions = true;
+        this.updateMenuVisibility();
+    }
 
-        this.startButton.on('pointerdown', () => {
-            this.showGameOptions = true;
-            this.startButton.visible = false;
-            this.menuButtons.forEach(btn => btn.visible = true);
-        });
+    private updateMenuVisibility(): void {
+        this.startButton.visible = !this.showGameOptions;
+        this.menuButtons.forEach(btn => btn.visible = this.showGameOptions);
     }
 
     private onResize(): void {
-
         this.container.position.set(
             this.app.screen.width / 2,
             this.app.screen.height / 2
         );
-
 
         this.fpsText.position.set(
             -this.app.screen.width / 2 + 20,
@@ -121,4 +120,4 @@ export class MenuScene extends BaseScene {
             this.fpsText.parent.removeChild(this.fpsText);
         }
     }
-} 
+}

@@ -25,7 +25,6 @@ export class PhoenixFlameScene extends BaseScene {
     private colors = [0xffc300, 0xff5733, 0xff9000, 0xfff200, 0xff6f00];
     private fireSound: Howl | null = null;
     private boundResize: () => void;
-    private closeButton: Graphics | null = null;
 
     constructor(app: Application, sceneManager: SceneManager) {
         super(app);
@@ -39,41 +38,36 @@ export class PhoenixFlameScene extends BaseScene {
         this.particles = [];
         this.fpsText.position.set(20, 20);
         this.container.addChild(this.fpsText);
-        if (this.backButton) {
-            if (this.backButton.parent) {
-                this.backButton.parent.removeChild(this.backButton);
-            }
-            this.backButton.destroy();
-            this.backButton = null;
-        }
-        this.closeButton = new Graphics();
-        this.closeButton.beginFill(0xffffff, 0.001);
-        this.closeButton.drawRect(0, 0, 48, 48);
-        this.closeButton.endFill();
-        this.closeButton.lineStyle(4, 0xffffff);
-        this.closeButton.moveTo(12, 12);
-        this.closeButton.lineTo(36, 36);
-        this.closeButton.moveTo(36, 12);
-        this.closeButton.lineTo(12, 36);
-        this.closeButton.position.set(window.innerWidth - 56, 16);
-        this.closeButton.eventMode = 'static';
-        this.closeButton.cursor = 'pointer';
-        this.closeButton.interactive = true;
-        this.closeButton.on('pointerdown', () => {
+
+        this.backButton = new Button('Back to Menu', () => {
+            this.fireSound?.stop();
+            this.fireSound?.unload();
+            this.fireSound = null;
             this.sceneManager.start('gameselect');
         });
-        this.container.addChild(this.particleContainer!);
-        this.container.addChild(this.closeButton);
+
+
+        this.backButton.position.set(
+            window.innerWidth - this.backButton.width - 20,
+            20
+        );
+
+        this.backButton.position.set(window.innerWidth - this.backButton.width - 20, 20);
+        this.container.addChild(this.backButton);
+
+        this.container.addChild(this.particleContainer);
         this.createFlameTextures();
         this.spawnInitialParticles();
-        window.addEventListener('resize', this.boundResize);
-        this.onResize();
+
         this.fireSound = new Howl({
             src: ['assets/sounds/fire.mp3'],
             volume: 0.4,
             loop: true
         });
         this.fireSound.play();
+
+        window.addEventListener('resize', this.boundResize);
+        this.onResize();
     }
 
     private createFlameTextures() {
@@ -111,9 +105,7 @@ export class PhoenixFlameScene extends BaseScene {
         const maxLife = 60 + Math.random() * 40;
         const scaleSpeed = 0.008 + Math.random() * 0.012;
         const fadeSpeed = 0.012 + Math.random() * 0.008;
-        if (this.particleContainer) {
-            this.particleContainer.addChild(sprite);
-        }
+        this.particleContainer?.addChild(sprite);
         this.particles.push({ sprite, vx, vy, life: 0, maxLife, scaleSpeed, fadeSpeed });
     }
 
@@ -128,9 +120,7 @@ export class PhoenixFlameScene extends BaseScene {
             p.sprite.alpha -= p.fadeSpeed * delta;
             p.life += delta;
             if (p.life > p.maxLife || p.sprite.alpha <= 0) {
-                if (this.particleContainer) {
-                    this.particleContainer.removeChild(p.sprite);
-                }
+                this.particleContainer?.removeChild(p.sprite);
                 this.particles.splice(i, 1);
             }
         }
@@ -140,31 +130,19 @@ export class PhoenixFlameScene extends BaseScene {
     }
 
     public onResize(): void {
-        if (this.closeButton) {
-            this.closeButton.position.set(window.innerWidth - 56, 16);
-        }
+        this.backButton?.position.set(window.innerWidth - this.backButton.width - 20, 20);
     }
 
     public destroy(): void {
         window.removeEventListener('resize', this.boundResize);
         this.container.removeAllListeners();
         this.container.removeChildren();
-        if (this.particleContainer) {
-            this.particleContainer.removeAllListeners();
-            this.particleContainer.destroy({ children: true });
-            this.particleContainer = null;
-        }
+        this.particleContainer?.destroy({ children: true });
+        this.particleContainer = null;
         this.particles.forEach(p => p.sprite.destroy());
         this.particles = [];
-        if (this.closeButton) {
-            this.closeButton.removeAllListeners();
-            this.closeButton.destroy();
-            this.closeButton = null;
-        }
-        if (this.fireSound) {
-            this.fireSound.stop();
-            this.fireSound.unload();
-            this.fireSound = null;
-        }
+        this.fireSound?.stop();
+        this.fireSound?.unload();
+        this.fireSound = null;
     }
-} 
+}
